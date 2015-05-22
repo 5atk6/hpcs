@@ -1,0 +1,15 @@
+a)コンパイル方法
+mpirun_rsh -hostfile hostfile -np 2 ./a-p-to-p
+compaとcompbの２つのホストを使う
+
+b)ホストは1つ
+
+ソケット内)0と2で通信
+mpirun_rsh -hostfile hostfile -np 2 MV2_CPU_MAPPING=0:2 ./a-p-to-p
+
+メモリの切り替わりで変化
+・キャッシュ調べ
+
+ソケット間)0と1で通信
+mpirun_rsh -hostfile hostfile -np 2 MV2_CPU_MAPPING=0:2 ./a-p-to-p
+最大値、最小値、平均

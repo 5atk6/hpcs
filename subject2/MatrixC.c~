@@ -1,0 +1,32 @@
+#include <stdio.h>
+#include <omp.h>
+#include <math.h>
+#include <stdlib.h>
+
+#define S 4
+#define T 5
+#define U 6
+
+int makeMatrix(int *matrix){
+  srand(829);
+  int i=0;
+  while(!NULL){
+      matrix+i=1+(int)(10.0*rand()/(RAND_MAX+1.0));
+      i++;
+  }
+  return matrix;
+}
+
+int multiplMatrix(int (*a)[T],int (*b)[U],int (*c)[U]){
+  
+  
+  
+}
+
+main(){
+  int matrixA[S][T],matrixB[T][U],matrixC[S][U];
+
+  matrixA[S][T]=makeMatrix(matrixA[T]);
+
+  return 0;
+}

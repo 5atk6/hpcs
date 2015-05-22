@@ -1,0 +1,125 @@
+#include <stdio.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <math.h>
+
+#include "data_util_bin.c"
+
+#define G 1.0f
+#define dt 1.0f
+#define size 1000
+
+//iとjの距離の計算
+double distanceCalc(double *x,double *y,double *z,int i,int j){
+  return sqrt((x[i]-x[j])*(x[i]-x[j])+(y[i]-y[j])*(y[i]-y[j])+(z[i]-z[j])*(z[i]-z[j]));
+}
+
+int main(int argc,char* argv[]){
+  double r,*axij,*ayij,*azij,*m,*x,*y,*z,*vx,*vy,*vz,*vxiNext,*vyiNext,*vziNext,*xiNext,*yiNext,*ziNext;
+  FILE *fp1,*fp2,*fp3;
+  int i,j,k,*buf,t;
+  
+  if(argc != 8){
+    printf("m x y z vx vy vzのデータを入力してね\n");
+    exit(1);
+  }
+
+  //データを読み込む
+  m=(double*)malloc(sizeof(double)*size);
+  x=(double*)malloc(sizeof(double)*size);
+  y=(double*)malloc(sizeof(double)*size);
+  z=(double*)malloc(sizeof(double)*size);
+  vx=(double*)malloc(sizeof(double)*size);
+  vy=(double*)malloc(sizeof(double)*size);
+  vz=(double*)malloc(sizeof(double)*size);
+  axij=(double*)malloc(sizeof(double)*size);
+  ayij=(double*)malloc(sizeof(double)*size);
+  azij=(double*)malloc(sizeof(double)*size);
+  vxiNext=(double*)malloc(sizeof(double)*size);
+  vyiNext=(double*)malloc(sizeof(double)*size);
+  vziNext=(double*)malloc(sizeof(double)*size);
+  xiNext=(double*)malloc(sizeof(double)*size);
+  yiNext=(double*)malloc(sizeof(double)*size);
+  ziNext=(double*)malloc(sizeof(double)*size);
+  read_data(argv[1],m,size);
+  read_data(argv[2],x,size);
+  read_data(argv[3],y,size);
+  read_data(argv[4],z,size);
+  read_data(argv[5],vx,size);
+  read_data(argv[6],vy,size);
+  read_data(argv[7],vz,size);
+  
+  //初期化
+  for(i=0;i<size;i++){
+    vxiNext[i]=0;
+    vyiNext[i]=0;
+    vziNext[i]=0;
+    xiNext[i]=0;
+    yiNext[i]=0;
+    ziNext[i]=0;
+  }
+  
+  //vxiNext,vyiNext,vziNextの計算
+  for(t=0;t<10;t++){
+
+    //axij,ayij,azijの計算
+    for(i=0;i<size;i++){
+      axij[i]=0;
+      ayij[i]=0;
+      azij[i]=0;
+    }
+  
+    for(i=0;i<size;i++){
+      for(j=0;j<size;j++){
+	if(i==j){
+	  continue;
+	}
+	r=distanceCalc(x,y,z,i,j);
+	axij[i]+=G*(m[j]/(r*r))*((x[j]-x[i])/r);
+	ayij[i]+=G*(m[j]/(r*r))*((y[j]-y[i])/r);
+	azij[i]+=G*(m[j]/(r*r))*((z[j]-z[i])/r);
+      }
+    
+      vxiNext[i]=vx[i]+axij[i];;
+      vyiNext[i]=vy[i]+ayij[i];;
+      vziNext[i]=vz[i]+azij[i];;
+    
+      xiNext[i]=x[i]+vxiNext[i]*dt;
+      yiNext[i]=y[i]+vyiNext[i]*dt;
+      ziNext[i]=z[i]+vziNext[i]*dt;
+    }
+    
+  }
+
+  write_data(xiNext,"xex.dat",size);
+  write_data(yiNext,"yex.dat",size);
+  write_data(ziNext,"zex.dat",size);
+  write_data(vxiNext,"vxex.dat",size);
+  write_data(vyiNext,"vyex.dat",size);
+  write_data(vxiNext,"vzex.dat",size);
+  
+  free(m);
+  free(x);
+  free(y);
+  free(z);
+  free(vx);
+  free(vy);
+  free(vz);
+  free(axij);
+  free(ayij);
+  free(azij);
+  free(xiNext);
+  free(yiNext);
+  free(ziNext);
+  free(vxiNext);
+  free(vyiNext);
+  free(vziNext);
+  
+  printf("success\n");
+  return 0;
+}
+
+
+
+			 
+					  

@@ -1,0 +1,97 @@
+#include <stdio.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <math.h>
+
+#include "data_util_bin.c"
+
+#define G 1
+#define dt 1
+
+double aij(double*,double*,double*,double*,double*,double*,double*);
+double distanceCalc(double*,double*,double*,int);
+
+int main(int argc,char* argv[]){
+  double r,*axij,*ayij,*azij,*m,*x,*y,*z,*vx,*vy,*vz,*distance,*xiNext,*yiNext,*ziNext;
+  FILE *fp1,*fp2,*fp3;
+  int i,j,*buf,size;
+  
+  if(argc != 8){
+    printf("m x y z vx vy vzのデータを入力してね\n");
+    exit(1);
+  }
+
+  size=1024;
+  
+  //x,y,z.datを読み込む
+  m=(double*)malloc(sizeof(double)*size);
+  x=(double*)malloc(sizeof(double)*size);
+  y=(double*)malloc(sizeof(double)*size);
+  z=(double*)malloc(sizeof(double)*size);
+  vx=(double*)malloc(sizeof(double)*size);
+  vy=(double*)malloc(sizeof(double)*size);
+  vz=(double*)malloc(sizeof(double)*size);
+  read_data(argv[1],m,size);
+  read_data(argv[2],x,size);
+  read_data(argv[3],y,size);
+  read_data(argv[4],z,size);
+  read_data(argv[5],vx,size);
+  read_data(argv[6],vy,size);
+  read_data(argv[7],vz,size);
+
+  //iとjの距離の計算
+  double distanceCalc(double *x,double *y,double *z,int i){
+    return pow(pow(x[i]-x[i-1],2)+pow(y[i]-y[i-1],2)+pow(z[i]-z[i-1],2),0.5);
+  }
+  
+  //axij,ayij,azijの計算
+  double aij(double *x,double *y,double *z,double *axij,double *ayij,double *azij,double *m,double r){
+    for(i=1;i<size;i++){
+      axij[i]=G*(m[i]/(r*r))*((x[i]-x[i-1])/r);
+      ayij[i]=G*(m[i]/(r*r))*((y[i]-y[i-1])/r);
+      azij[i]=G*(m[i]/(r*r))*((z[i]-z[i-1])/r);
+    }
+  }
+
+  //vxiNext,vyiNext,vziNextの計算
+  for(i=0;i<size;i++){
+    r=distanceCalc(x,y,z,i);
+    aij(x,y,z,axij,ayij,azij,m,r);
+    vx[i+1]=vx[i];
+    vy[i+1]=vy[i];
+    vz[i+1]=vz[i];
+    for(j=0;j<size-1;j++){
+      vx[i+1]+=axij[j];
+      vy[i+1]+=ayij[j];
+      vz[i+1]+=azij[j];
+    }
+    x[i+1]=x[i]+vx[i+1]*dt;
+    y[i+1]=y[i]+vy[i+1]*dt;
+    z[i+1]=z[i]+vz[i+1]*dt;
+  }
+
+  
+  write_data(x,"xex.dat",size);
+  write_data(y,"yex.dat",size);
+  write_data(z,"zex.dat",size);
+  write_data(vx,"vxex.dat",size);
+  write_data(vy,"vyex.dat",size);
+  write_data(vx,"vzex.dat",size);
+  
+  free(m);
+  free(x);
+  free(y);
+  free(z);
+  free(vx);
+  free(vy);
+  free(vz);
+  
+  printf("success\n");
+  return 0;
+  
+}
+
+
+
+			 
+					  
