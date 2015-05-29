@@ -2,14 +2,14 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <math.h>
-#include <string.h>
+#include <omp.h>
 
 #include "data_util_bin.c"
 
 #define G 1.0f
 #define dt 1.0f
 #define size 1000
-#define step 10
+#define step 100 //ステップ数
 
 //iとjの距離の計算
 double distanceCalc(double *x,double *y,double *z,int i,int j){
@@ -17,7 +17,7 @@ double distanceCalc(double *x,double *y,double *z,int i,int j){
 }
 
 int main(int argc,char* argv[]){
-  double r,*m,*x,*y,*z,*vx,*vy,*vz,*vxiNext,*vyiNext,*vziNext,*xiNext,*yiNext,*ziNext,axij,ayij,azij;
+  double r,*axij,*ayij,*azij,*m,*x,*y,*z,*vx,*vy,*vz,*vxiNext,*vyiNext,*vziNext,*xiNext,*yiNext,*ziNext,start,end,time;
   int i,j,t;
   
   if(argc != 8){
@@ -33,7 +33,9 @@ int main(int argc,char* argv[]){
   vx=(double*)malloc(sizeof(double)*size);
   vy=(double*)malloc(sizeof(double)*size);
   vz=(double*)malloc(sizeof(double)*size);
-  
+  axij=(double*)malloc(sizeof(double)*size);
+  ayij=(double*)malloc(sizeof(double)*size);
+  azij=(double*)malloc(sizeof(double)*size);
   vxiNext=(double*)malloc(sizeof(double)*size);
   vyiNext=(double*)malloc(sizeof(double)*size);
   vziNext=(double*)malloc(sizeof(double)*size);
@@ -49,6 +51,7 @@ int main(int argc,char* argv[]){
   read_data(argv[7],vz,size);
   
   //初期化
+#pragma omp parallel for private(i)
   for(i=0;i<size;i++){
     vxiNext[i]=0;
     vyiNext[i]=0;
@@ -57,41 +60,65 @@ int main(int argc,char* argv[]){
     yiNext[i]=0;
     ziNext[i]=0;
   }
+
+  time=0.0;
   
-  //vxiNext,vyiNext,vziNextの計算
+  //重力の計算
+
+  //#pragma omp parallel  
   for(t=0;t<step;t++){
+    
+#pragma omp barrier
+#pragma omp master
+    {
+      start=omp_get_wtime();
+    }
+    
+    //axij,ayij,azijの初期化
+    //#pragma omp parallel
+    //#pragma omp parallel for private(i)
     for(i=0;i<size;i++){
-      axij=0;
-      ayij=0;
-      azij=0;
+      axij[i]=0;
+      ayij[i]=0;
+      azij[i]=0;
+    }
+
+#pragma omp parallel for private(j,r)
+    for(i=0;i<size;i++){
       for(j=0;j<size;j++){
 	if(i==j){
 	  continue;
 	}
+        
 	r=distanceCalc(x,y,z,i,j);
-	axij+=G*(m[j]/(r*r))*((x[j]-x[i])/r);
-	ayij+=G*(m[j]/(r*r))*((y[j]-y[i])/r);
-	azij+=G*(m[j]/(r*r))*((z[j]-z[i])/r);
+	axij[i]+=G*(m[j]/(r*r))*((x[j]-x[i])/r);
+	ayij[i]+=G*(m[j]/(r*r))*((y[j]-y[i])/r);
+	azij[i]+=G*(m[j]/(r*r))*((z[j]-z[i])/r);
       }
-      vxiNext[i]=vx[i]+axij;
-      vyiNext[i]=vy[i]+ayij;
-      vziNext[i]=vz[i]+azij;
+    
+      vxiNext[i]=vx[i]+axij[i];;
+      vyiNext[i]=vy[i]+ayij[i];;
+      vziNext[i]=vz[i]+azij[i];;
     
       xiNext[i]=x[i]+vxiNext[i]*dt;
       yiNext[i]=y[i]+vyiNext[i]*dt;
       ziNext[i]=z[i]+vziNext[i]*dt;
     }
-    memcpy(x,xiNext,sizeof(x)*size);
-    memcpy(y,yiNext,sizeof(y)*size);
-    memcpy(z,ziNext,sizeof(z)*size);
-    memcpy(vx,vxiNext,sizeof(vx)*size);
-    memcpy(vy,vyiNext,sizeof(vy)*size);
-    memcpy(vz,vziNext,sizeof(vz)*size);
+    
+    #pragma omp barrier
+#pragma omp master
+    {
+      end=omp_get_wtime();
+      }
+    
+      time+=end-start;
   }
 
-  write_data(x,"xex.dat",size);
-  write_data(y,"yex.dat",size);
-  write_data(z,"zex.dat",size);
+  printf("time = %lf\n",time/step);
+  
+  write_data(xiNext,"xex.dat",size);
+  write_data(yiNext,"yex.dat",size);
+  write_data(ziNext,"zex.dat",size);
   write_data(vxiNext,"vxex.dat",size);
   write_data(vyiNext,"vyex.dat",size);
   write_data(vxiNext,"vzex.dat",size);
@@ -103,6 +130,9 @@ int main(int argc,char* argv[]){
   free(vx);
   free(vy);
   free(vz);
+  free(axij);
+  free(ayij);
+  free(azij);
   free(xiNext);
   free(yiNext);
   free(ziNext);
@@ -113,8 +143,3 @@ int main(int argc,char* argv[]){
   printf("success\n");
   return 0;
 }
-
-
-
-			 
-					  

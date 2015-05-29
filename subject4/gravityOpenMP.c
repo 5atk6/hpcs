@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <omp.h>
 
 #include "data_util_bin.c"
 
@@ -11,20 +12,14 @@
 #define size 1000
 #define step 10
 
-//iとjの距離の計算
-double distanceCalc(double *x,double *y,double *z,int i,int j){
-  return sqrt((x[i]-x[j])*(x[i]-x[j])+(y[i]-y[j])*(y[i]-y[j])+(z[i]-z[j])*(z[i]-z[j]));
-}
-
 int main(int argc,char* argv[]){
-  double r,*m,*x,*y,*z,*vx,*vy,*vz,*vxiNext,*vyiNext,*vziNext,*xiNext,*yiNext,*ziNext,axij,ayij,azij;
+  double r,axij,ayij,azij,*m,*x,*y,*z,*vx,*vy,*vz,*vxiNext,*vyiNext,*vziNext,*xiNext,*yiNext,*ziNext,start,end,time;
   int i,j,t;
   
   if(argc != 8){
     printf("m x y z vx vy vzのデータを入力してね\n");
     exit(1);
   }
-
   //データを読み込む
   m=(double*)malloc(sizeof(double)*size);
   x=(double*)malloc(sizeof(double)*size);
@@ -33,7 +28,6 @@ int main(int argc,char* argv[]){
   vx=(double*)malloc(sizeof(double)*size);
   vy=(double*)malloc(sizeof(double)*size);
   vz=(double*)malloc(sizeof(double)*size);
-  
   vxiNext=(double*)malloc(sizeof(double)*size);
   vyiNext=(double*)malloc(sizeof(double)*size);
   vziNext=(double*)malloc(sizeof(double)*size);
@@ -57,22 +51,27 @@ int main(int argc,char* argv[]){
     yiNext[i]=0;
     ziNext[i]=0;
   }
-  
-  //vxiNext,vyiNext,vziNextの計算
+
+  time=0;
+  //重力の計算 
   for(t=0;t<step;t++){
+   
+    start=omp_get_wtime();
+      
+#pragma omp parallel for private(j,r,axij,ayij,azij)
     for(i=0;i<size;i++){
-      axij=0;
-      ayij=0;
-      azij=0;
+      axij=0; ayij=0; azij=0; //aijの初期化
+        
       for(j=0;j<size;j++){
 	if(i==j){
 	  continue;
 	}
-	r=distanceCalc(x,y,z,i,j);
+	r=sqrt((x[i]-x[j])*(x[i]-x[j])+(y[i]-y[j])*(y[i]-y[j])+(z[i]-z[j])*(z[i]-z[j]));
 	axij+=G*(m[j]/(r*r))*((x[j]-x[i])/r);
 	ayij+=G*(m[j]/(r*r))*((y[j]-y[i])/r);
 	azij+=G*(m[j]/(r*r))*((z[j]-z[i])/r);
       }
+    
       vxiNext[i]=vx[i]+axij;
       vyiNext[i]=vy[i]+ayij;
       vziNext[i]=vz[i]+azij;
@@ -81,14 +80,19 @@ int main(int argc,char* argv[]){
       yiNext[i]=y[i]+vyiNext[i]*dt;
       ziNext[i]=z[i]+vziNext[i]*dt;
     }
+    end=omp_get_wtime();
+    time+=end-start;
+    
     memcpy(x,xiNext,sizeof(x)*size);
     memcpy(y,yiNext,sizeof(y)*size);
     memcpy(z,ziNext,sizeof(z)*size);
     memcpy(vx,vxiNext,sizeof(vx)*size);
     memcpy(vy,vyiNext,sizeof(vy)*size);
     memcpy(vz,vziNext,sizeof(vz)*size);
+    
   }
-
+  printf("time = %lf\n",time/step);
+  
   write_data(x,"xex.dat",size);
   write_data(y,"yex.dat",size);
   write_data(z,"zex.dat",size);
