@@ -73,6 +73,7 @@ int main(int argc,char* argv[]){
 	ayij+=G*(m[j]/(r*r))*((y[j]-y[i])/r);
 	azij+=G*(m[j]/(r*r))*((z[j]-z[i])/r);
       }
+      
       vxiNext[i]=vx[i]+axij;
       vyiNext[i]=vy[i]+ayij;
       vziNext[i]=vz[i]+azij;
