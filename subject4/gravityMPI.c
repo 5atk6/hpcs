@@ -54,7 +54,6 @@ int main(int argc,char* argv[]){
     read_data(argv[5],global_vx,size);
     read_data(argv[6],global_vy,size);
     read_data(argv[7],global_vz,size);
-    //printf("hogeee %lf\n",global_x[500]);  
   }
   MPI_Barrier(MPI_COMM_WORLD);
   //他プロセスにランク0で読み込んだデータを分配
@@ -65,7 +64,6 @@ int main(int argc,char* argv[]){
   MPI_Scatter(global_vx,size/nprocs,MPI_DOUBLE,local_vx,size/nprocs,MPI_DOUBLE,0,MPI_COMM_WORLD);
   MPI_Scatter(global_vy,size/nprocs,MPI_DOUBLE,local_vy,size/nprocs,MPI_DOUBLE,0,MPI_COMM_WORLD);
   MPI_Scatter(global_vz,size/nprocs,MPI_DOUBLE,local_vz,size/nprocs,MPI_DOUBLE,0,MPI_COMM_WORLD);
-  //printf("hoge %d %lf\n",my_rank,local_x[0]);
   
   vxiNext=(double*)malloc(sizeof(double)*size/nprocs);
   vyiNext=(double*)malloc(sizeof(double)*size/nprocs);
@@ -83,7 +81,6 @@ int main(int argc,char* argv[]){
     yiNext[i]=0;
     ziNext[i]=0;
   }
-  
   
   //時間計測について
   local_time=0.0;
@@ -116,7 +113,7 @@ int main(int argc,char* argv[]){
       MPI_Allreduce(&axij,&global_axij,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
       MPI_Allreduce(&ayij,&global_ayij,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
       MPI_Allreduce(&azij,&global_azij,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-      //printf("ここまではおっけー %d \n",my_rank);
+      
       
       vxiNext[i]=local_vx[i]+global_axij; 
       vyiNext[i]=local_vy[i]+global_axij; 
@@ -140,12 +137,12 @@ int main(int argc,char* argv[]){
   }
   printf("time = %lf\n",local_time/step);
   
-  /*write_data(x,"xex.dat",size);
+  write_data(x,"xex.dat",size);
   write_data(y,"yex.dat",size);
   write_data(z,"zex.dat",size);
   write_data(vxiNext,"vxex.dat",size);
   write_data(vyiNext,"vyex.dat",size);
-  write_data(vxiNext,"vzex.dat",size);*/
+  write_data(vxiNext,"vzex.dat",size);
 
   if(my_rank==0){
     free(global_m);
@@ -176,56 +173,3 @@ int main(int argc,char* argv[]){
   
   return 0;
 }
-
-
-
-
-/*if(x==NULL){
-    printf("xerror\n");  
-    return 1;
-  }if(y==NULL){
-    printf("error\n");
-    return 1;
-  }if(z==NULL){
-    printf("error\n");
-    return 1;
-  }if(m==NULL){
-    printf("merror\n");
-    return 1;
-  }if(vx==NULL){
-    printf("error\n");
-    return 1;
-  }if(vy==NULL){
-    printf("error\n");
-    return 1;
-  }if(vz==NULL){
-    printf("error\n");
-    return 1;
-  }
-  if(vxiNext==NULL){
-    printf("error\n");
-    return 1;
-  }if(vyiNext==NULL){
-    printf("error\n");
-    return 1;
-  }if(vziNext==NULL){
-    printf("error\n");
-    return 1;
-  }if(xiNext==NULL){
-    printf("error\n");
-    return 1;
-  }if(yiNext==NULL){
-    printf("error\n");
-    return 1;
-  }if(ziNext==NULL){
-    printf("error\n");
-    return 1;
-    }*/
-					  
-
-  /*sendXbuf=(double*)malloc(sizeof(double)*nprocs);
-  sendYbuf=(double*)malloc(sizeof(double)*nprocs);
-  sendZbuf=(double*)malloc(sizeof(double)*nprocs);
-  receiveXbuf=(double*)malloc(sizeof(double)*nprocs);
-  receiveYbuf=(double*)malloc(sizeof(double)*nprocs);
-  receiveZbuf=(double*)malloc(sizeof(double)*nprocs);*/  
