@@ -160,7 +160,6 @@ int main(int argc,char* argv[]){
   }
   printf("time = %lf\n",local_time/step);
 
-
   MPI_Gather(local_x,size/nprocs,MPI_DOUBLE,global_x,size/nprocs,
 	     MPI_DOUBLE,0,MPI_COMM_WORLD);
   MPI_Gather(local_y,size/nprocs,MPI_DOUBLE,global_y,size/nprocs,
