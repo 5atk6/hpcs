@@ -8,16 +8,22 @@
 
 #define G 1.0f
 #define dt 1.0f
-#define size 1000
+#define size 1024
 #define step 10
 
 //iとjの距離の計算
 double distanceCalc(double *x,double *y,double *z,int i,int j){
-  return sqrt((x[i]-x[j])*(x[i]-x[j])+(y[i]-y[j])*(y[i]-y[j])+(z[i]-z[j])*(z[i]-z[j]));
+  return sqrt((x[i]-x[j])*(x[i]-x[j])
+	      +(y[i]-y[j])*(y[i]-y[j])
+	      +(z[i]-z[j])*(z[i]-z[j]));
 }
 
 int main(int argc,char* argv[]){
-  double r,*m,*x,*y,*z,*vx,*vy,*vz,*vxiNext,*vyiNext,*vziNext,*xiNext,*yiNext,*ziNext,axij,ayij,azij;
+  double r,
+    *m,*x,*y,*z,*vx,*vy,*vz,
+    *vxiNext,*vyiNext,*vziNext,
+    *xiNext,*yiNext,*ziNext,
+    axij,ayij,azij;
   int i,j,t;
   
   if(argc != 8){
@@ -90,7 +96,7 @@ int main(int argc,char* argv[]){
     memcpy(vz,vziNext,sizeof(vz)*size);
   }
 
-  write_data(x,"xex.dat",size);
+  write_data(x,"xexTikuzi.dat",size);
   write_data(y,"yex.dat",size);
   write_data(z,"zex.dat",size);
   write_data(vxiNext,"vxex.dat",size);
