@@ -17,6 +17,7 @@
 int main(int argc,char* argv[]){
   double r,startTime,endTime,local_time,
     axij,ayij,azij,
+    global_axij,global_ayij,global_azij,
     *vxiNext,*vyiNext,*vziNext,
     *xiNext,*yiNext,*ziNext,
     *global_m,*global_x,*global_y,*global_z,*global_vx,*global_vy,*global_vz,
@@ -41,8 +42,14 @@ int main(int argc,char* argv[]){
   local_vx=(double*)malloc(sizeof(double)*(size/nprocs));
   local_vy=(double*)malloc(sizeof(double)*(size/nprocs));
   local_vz=(double*)malloc(sizeof(double)*(size/nprocs));
+  vxiNext=(double*)malloc(sizeof(double)*size/nprocs);
+  vyiNext=(double*)malloc(sizeof(double)*size/nprocs);
+  vziNext=(double*)malloc(sizeof(double)*size/nprocs);
+  xiNext=(double*)malloc(sizeof(double)*size/nprocs);
+  yiNext=(double*)malloc(sizeof(double)*size/nprocs);
+  ziNext=(double*)malloc(sizeof(double)*size/nprocs);
   
-  //データを読み込む
+  
   if(my_rank==0){  
     global_m=(double*)malloc(sizeof(double)*size);
     global_x=(double*)malloc(sizeof(double)*size);
@@ -51,7 +58,8 @@ int main(int argc,char* argv[]){
     global_vx=(double*)malloc(sizeof(double)*size);
     global_vy=(double*)malloc(sizeof(double)*size);
     global_vz=(double*)malloc(sizeof(double)*size);
-        
+
+    //データを読み込む      
     read_data(argv[1],global_m,size);
     read_data(argv[2],global_x,size);
     read_data(argv[3],global_y,size);
@@ -78,29 +86,12 @@ int main(int argc,char* argv[]){
   MPI_Scatter(global_vz,size/nprocs,MPI_DOUBLE,local_vz,
 	      size/nprocs,MPI_DOUBLE,0,MPI_COMM_WORLD);
   
-  vxiNext=(double*)malloc(sizeof(double)*size/nprocs);
-  vyiNext=(double*)malloc(sizeof(double)*size/nprocs);
-  vziNext=(double*)malloc(sizeof(double)*size/nprocs);
-  xiNext=(double*)malloc(sizeof(double)*size/nprocs);
-  yiNext=(double*)malloc(sizeof(double)*size/nprocs);
-  ziNext=(double*)malloc(sizeof(double)*size/nprocs);
-  
   //初期化
-  for(i=0;i<size/nprocs;i++){
-    vxiNext[i]=0;
-    vyiNext[i]=0;
-    vziNext[i]=0;
-    xiNext[i]=0;
-    yiNext[i]=0;
-    ziNext[i]=0;
-  }
-  
-  //時間計測について
   local_time=0.0;
+  global_axij=0;
+  global_ayij=0;
+  global_azij=0;
   
-  double global_axij=0;
-  double global_ayij=0;
-  double global_azij=0;
   //重力の計算 
   for(t=0;t<step;t++){
     MPI_Barrier(MPI_COMM_WORLD);
@@ -121,14 +112,17 @@ int main(int argc,char* argv[]){
 	ayij+=G*(local_m[j]/(r*r))*((local_y[j]-local_y[i])/r);
 	azij+=G*(local_m[j]/(r*r))*((local_z[j]-local_z[i])/r);
 
-	
-	/*for(k=0;k<nprocs;k++){
+	/*MPI_Send(&axij+my_rank,size/nprocs,MPI_DOUBLE,
+		 my_rank,0,MPI_COMM_WORLD);
+	printf("hoge\n");
+	for(k=0;k<nprocs;k++){
+	  
 	  if(k==my_rank){
 	    continue;
 	  }
-	  MPI_Send(&axij+my_rank,size/nprocs,MPI_DOUBLE,k,0,MPI_COMM_WORLD);  
 	  MPI_Recv(&axij+k,size/nprocs,MPI_DOUBLE,k,0,MPI_COMM_WORLD,&status);
 	  }*/
+	
       }
       
       //他プロセスのaijの情報を受け取り足し合わせてglobal_aijに入れる
@@ -144,7 +138,6 @@ int main(int argc,char* argv[]){
       xiNext[i]=local_x[i]+vxiNext[i]*dt;
       yiNext[i]=local_y[i]+vyiNext[i]*dt;
       ziNext[i]=local_z[i]+vziNext[i]*dt;
-      
     }
     
     MPI_Barrier(MPI_COMM_WORLD);
@@ -172,14 +165,14 @@ int main(int argc,char* argv[]){
 	     MPI_DOUBLE,0,MPI_COMM_WORLD);
   MPI_Gather(local_vz,size/nprocs,MPI_DOUBLE,global_vz,size/nprocs,
 	     MPI_DOUBLE,0,MPI_COMM_WORLD);
-  if(my_rank==0){
-    
+
+  if(my_rank==0){  
     write_data(global_x,"xex.dat",size);
-    /*write_data(output_y,"yex.dat",size/nprocs);
-    write_data(output_z,"zex.dat",size/nprocs);
-    write_data(output_vx,"vxex.dat",size/nprocs);
-    write_data(output_vy,"vyex.dat",size/nprocs);
-    write_data(output_vz,"vzex.dat",size/nprocs);
+    /*write_data(global_y,"yex.dat",size);
+    write_data(global_z,"zex.dat",size);
+    write_data(global_vx,"vxex.dat",size);
+    write_data(global_vy,"vyex.dat",size);
+    write_data(global_vz,"vzex.dat",size);
     */
     free(global_m);
     free(global_x);
