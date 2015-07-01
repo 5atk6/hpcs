@@ -99,7 +99,7 @@ int main(int argc,char* argv[]){
   global_ayij=0;
   global_azij=0;
   
-  //重力の計算 
+  //重力の計算 //rank数でfor文
   for(t=0;t<step;t++){
     MPI_Barrier(MPI_COMM_WORLD);
     startTime=MPI_Wtime();
@@ -112,71 +112,55 @@ int main(int argc,char* argv[]){
       MPI_Send(basicLocal_x+my_rank,size/nprocs,MPI_DOUBLE,
 	       i,0,MPI_COMM_WORLD);
     }
-    
-    //初期値
-    memcpy(recvLocal_x,basicLocal_x,sizeof(basicLocal_x)*size/nprocs);
-    memcpy(recvLocal_y,basicLocal_y,sizeof(basicLocal_x)*size/nprocs);
-    memcpy(recvLocal_z,basicLocal_z,sizeof(basicLocal_x)*size/nprocs);
-    memcpy(recvLocal_m,basicLocal_m,sizeof(basicLocal_x)*size/nprocs);
-    
-    for(i=0;i<size/nprocs;i++){
-      //printf("hoge my_rank=%d i=%d\n",my_rank,i);
-      axij=0.0; ayij=0.0; azij=0.0; //aijの初期化
-      
-      for(k=0;k<nprocs;k++){
 
-	//受け取り
-	if(k!=my_rank){
-	  MPI_Recv(basicLocal_x+k,size/nprocs,MPI_DOUBLE,k,0,MPI_COMM_WORLD,&status);
-	  memcpy(recvLocal_x,basicLocal_x+k,sizeof(basicLocal_x)*size/nprocs); 
-	}
+    //basicLocalサイズ分のループ
+    for(i=0;i<size/nprocs;i++){
+      
+      axij=0.0; ayij=0.0; azij=0.0; //aijの初期化
+
+      
+     for
 	  
-	printf("my_rank=%d i=%d j=%d\t k=%d\n",my_rank,i,j,k);
-	
-	for(j=0;j<size/nprocs;j++){
-	  if(i==j){
-	    continue;
+	  for(j=0;j<size/nprocs;j++){ //1024までやりたい
+	    if(i==j){
+	      continue;
+	    }
+	    r=sqrt((basicLocal_x[i]-recvLocal_x[j])*(basicLocal_x[i]-recvLocal_x[j])
+		   +(basicLocal_y[i]-recvLocal_y[j])*(basicLocal_y[i]-recvLocal_y[j])
+		   +(basicLocal_z[i]-recvLocal_z[j])*(basicLocal_z[i]-recvLocal_z[j]));
+	    axij+=G*(recvLocal_m[j]/(r*r))*((recvLocal_x[j]-basicLocal_x[i])/r);
+	    ayij+=G*(recvLocal_m[j]/(r*r))*((recvLocal_y[j]-basicLocal_y[i])/r);
+	    azij+=G*(recvLocal_m[j]/(r*r))*((recvLocal_z[j]-basicLocal_z[i])/r);
 	  }
-	  r=sqrt((basicLocal_x[i]-recvLocal_x[j])*(basicLocal_x[i]-recvLocal_x[j])
-		 +(basicLocal_y[i]-recvLocal_y[j])*(basicLocal_y[i]-recvLocal_y[j])
-		 +(basicLocal_z[i]-recvLocal_z[j])*(basicLocal_z[i]-recvLocal_z[j]));
-	  axij+=G*(recvLocal_m[j]/(r*r))*((recvLocal_x[j]-basicLocal_x[i])/r);
-	  ayij+=G*(recvLocal_m[j]/(r*r))*((recvLocal_y[j]-basicLocal_y[i])/r);
-	  azij+=G*(recvLocal_m[j]/(r*r))*((recvLocal_z[j]-basicLocal_z[i])/r);
-	}
-	
-	MPI_Barrier(MPI_COMM_WORLD);
       }
     
       //他プロセスのaijの情報を受け取り足し合わせてglobal_aijに入れる
-      //MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Barrier(MPI_COMM_WORLD);
       //printf("rank%d axij=%lf\n",my_rank,axij);      
-      // MPI_Allreduce(&axij,&global_axij,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-      //MPI_Allreduce(&ayij,&global_ayij,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-      //MPI_Allreduce(&azij,&global_azij,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      MPI_Allreduce(&axij,&global_axij,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      MPI_Allreduce(&ayij,&global_ayij,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      MPI_Allreduce(&azij,&global_azij,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
       //printf("my_rankhoge %d\n",my_rank);
       
-      vxiNext[i]=basicLocal_vx[i]+axij*dt; 
-      vyiNext[i]=basicLocal_vy[i]+ayij*dt; 
-      vziNext[i]=basicLocal_vz[i]+azij*dt; 
-      
+      vxiNext[i]=basicLocal_vx[i]+global_axij*dt; 
+      vyiNext[i]=basicLocal_vy[i]+global_ayij*dt; 
+      vziNext[i]=basicLocal_vz[i]+global_azij*dt; 
+    
       xiNext[i]=basicLocal_x[i]+vxiNext[i]*dt;
       yiNext[i]=basicLocal_y[i]+vyiNext[i]*dt;
       ziNext[i]=basicLocal_z[i]+vziNext[i]*dt;
-      	
     }
+    
     MPI_Barrier(MPI_COMM_WORLD);
+    endTime=MPI_Wtime();
+    local_time+=endTime-startTime;
+    
     memcpy(basicLocal_x,xiNext,sizeof(basicLocal_x)*size/nprocs);
     memcpy(basicLocal_y,yiNext,sizeof(basicLocal_y)*size/nprocs);
     memcpy(basicLocal_z,ziNext,sizeof(basicLocal_z)*size/nprocs);
     memcpy(basicLocal_vx,vxiNext,sizeof(basicLocal_vx)*size/nprocs);
     memcpy(basicLocal_vy,vyiNext,sizeof(basicLocal_vy)*size/nprocs);
     memcpy(basicLocal_vz,vziNext,sizeof(basicLocal_vz)*size/nprocs);
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    endTime=MPI_Wtime();
-    local_time+=endTime-startTime;
-    
   }
   printf("time = %lf\n",local_time/step);
 
