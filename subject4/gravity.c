@@ -9,7 +9,9 @@
 #define G 1.0f
 #define dt 1.0f
 #define size 1024
+#ifndef step
 #define step 10
+#endif
 
 //iとjの距離の計算
 double distanceCalc(double *x,double *y,double *z,int i,int j){

@@ -1,0 +1,13 @@
+rm gravity
+rm gravityMPI
+
+cc gravity.c -o gravity -lm #-Dstep=1
+
+./gravity m.dat x.dat y.dat z.dat vx.dat vy.dat vz.dat
+
+mpicc gravityMPI.c -o gravityMPI #-Dstep=1
+
+mpirun -hostfile hostfile -np 2 ./gravityMPI m.dat x.dat y.dat z.dat vx.dat vy.dat vz.dat
+
+./data_compare_bin xex.dat outx.dat
+#./data_compare_bin xex.dat xexTikuzi.dat
